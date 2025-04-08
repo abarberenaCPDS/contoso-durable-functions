@@ -76,8 +76,12 @@ Logs will contain:
   "message" : "Starting orchestration", "context" : { "ApplicationId": "MyApp", "UserCode": "ABC123", "OrchestrationId": "auto-generated" }
   ```
 
+  ## Testing
 
-### Resources
+- See [Contoso.FunctionsApp.Tests.Integration/README.md](./Contoso.FunctionsApp.Tests.Integration/README.md)
+
+
+## Resources
 
 - https://github.com/Azure/azure-functions-core-tools/issues/3766
 - https://www.jpatrickfulton.dev/blog/2023-07-08-fix-csharp-macos-debugging/
