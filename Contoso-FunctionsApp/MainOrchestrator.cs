@@ -27,6 +27,9 @@ namespace Contoso.FunctionsApp
             using var span = ActivityTracing.StartSpan("MainOrchestrator");
             TransactionEnricher.MarkStep("MainOrchestrator");
 
+            this._logger.LogInfo("Running MainOrchestrator");
+
+
             // Propagate both headers into the activity call
             // this is left for obviousness, there is no need to manually re-wrap it in a dictionary
             // and pass it again as OUTPUT, 
@@ -38,8 +41,11 @@ namespace Contoso.FunctionsApp
             // await context.CallActivityAsync("ProcessActivity", output);
 
             // BONUS: keep in mind, that you can now pass OrchestrationInput directly into the activity
-
+            this._logger.LogInfo("Calling ProcessActivity");
             await context.CallActivityAsync("ProcessActivity", input);
+            this._logger.LogInfo("Called ProcessActivity");
+
+            this._logger.LogInfo("Completed MainOrchestrator");
         }
     }
 }
