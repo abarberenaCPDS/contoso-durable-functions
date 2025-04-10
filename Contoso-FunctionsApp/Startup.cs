@@ -40,6 +40,7 @@ public class Startup : FunctionsStartup
         // Add...
         builder.Services.AddHttpClient();
         builder.Services.AddSingleton<IContextLogger, ContextLogger>();
+        builder.Services.AddSingleton<IServiceBusEnvelopeSender, ServiceBusEnvelopeSender>();
 
         // Setup OpenTelemetry Activity
         SetupOpenTelemetry();

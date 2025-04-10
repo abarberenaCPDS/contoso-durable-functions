@@ -7,4 +7,13 @@
     <Platforms>x64</Platforms>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Azure.Messaging.ServiceBus" Version="7.19.0" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Contoso.Infrastructure.Context/Contoso.Infrastructure.Context.csproj" />
+  </ItemGroup>
+
 </Project>

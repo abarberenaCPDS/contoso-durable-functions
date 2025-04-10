@@ -17,12 +17,14 @@ namespace Contoso.FunctionsApp
     public class ProcessActivity
     {
         private readonly IContextLogger _logger;
+        private readonly IServiceBusEnvelopeSender _serviceBusEnvelopeSender;
         private readonly SbOptions _sbOptions;
 
-        public ProcessActivity(IContextLogger logger, IOptions<SbOptions> sbOptions)
+        public ProcessActivity(IContextLogger logger, IServiceBusEnvelopeSender serviceBusEnvelopeSender, IOptions<SbOptions> sbOptions)
         {
             _logger = logger;
-            _sbOptions = sbOptions.Value;
+            this._serviceBusEnvelopeSender = serviceBusEnvelopeSender;
+            this._sbOptions = sbOptions.Value;
         }
 
         [FunctionName("ProcessActivity")]
@@ -45,12 +47,23 @@ namespace Contoso.FunctionsApp
                 ATimestamp = DateTime.UtcNow
             };
 
+            // // approach 1: Sending a Message
+            // await SendMessageAsync(messageBody);
+
+            // approach 2: Sending an Envelope
+            await _serviceBusEnvelopeSender.SendAsync(messageBody, input.MyAppContext, input.DistributedTransactionContext);
+            _logger.LogInfo($"Message sent to Service Bus queue: {_sbOptions.QueueName}");
+            await Task.CompletedTask;
+        }
+
+        private async Task SendMessageAsync(MySbPayload messageBody)
+        {
             var json = JsonSerializer.Serialize(messageBody);
             var message = new ServiceBusMessage(Encoding.UTF8.GetBytes(json))
             {
                 MessageId = messageBody.SomeMessageId
             };
-            
+
             // Add context as headers (out-of-band)
             var ctx = ContextHolder<MyAppContext>.Current;
             var tx = ContextHolder<DistributedTransactionContext>.Current;
@@ -63,12 +76,9 @@ namespace Contoso.FunctionsApp
 
             await using var client = new ServiceBusClient(_sbOptions.ConnectionString);
             var sender = client.CreateSender(_sbOptions.QueueName);
-            
+
             // Send the message
             await sender.SendMessageAsync(message);
-
-            _logger.LogInfo($"Message sent to Service Bus queue: {_sbOptions.QueueName}");
-            // await Task.CompletedTask;
         }
     }
 }

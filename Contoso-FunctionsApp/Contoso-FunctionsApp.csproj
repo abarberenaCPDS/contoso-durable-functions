@@ -34,10 +34,10 @@
 		</None>
 	</ItemGroup>
 	<ItemGroup>
-		<Using Include="System.Threading.ExecutionContext" Alias="ExecutionContext" />
+		<FunctionsPreservedDependencies Include="System.Memory.Data.dll" />
 	</ItemGroup>
 	<ItemGroup>
-		<FunctionsPreservedDependencies Include="System.Memory.Data.dll" />
+		<Using Include="System.Threading.ExecutionContext" Alias="ExecutionContext" />
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="../Contoso.Infrastructure.Messaging/Contoso.Infrastructure.Messaging.csproj" />
