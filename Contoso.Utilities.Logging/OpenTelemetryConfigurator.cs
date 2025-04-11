@@ -1,9 +1,7 @@
-﻿using OpenTelemetry;
-using OpenTelemetry.Trace;
+﻿using System.Reflection;
+using OpenTelemetry;
 using OpenTelemetry.Resources;
-using System;
-using System.Collections.Generic;
-using System.Reflection;
+using OpenTelemetry.Trace;
 
 namespace Contoso.Utilities.Logging
 {
@@ -22,7 +20,7 @@ namespace Contoso.Utilities.Logging
 
             return Sdk.CreateTracerProviderBuilder()
                 .SetResourceBuilder(resourceBuilder)
-                .AddSource(TracingConstants.ServiceName)
+                .AddSource(TracingConstants.SourceName)
                 .AddOtlpExporter(opt =>
                 {
                     opt.Endpoint = new Uri("https://otel.datadoghq.com");

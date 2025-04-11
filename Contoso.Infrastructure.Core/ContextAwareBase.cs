@@ -7,10 +7,13 @@ namespace Contoso.Infrastructure.Core
     public abstract class ContextAwareBase<T> : HeaderCarrierBase<T> where T : class
     {
         protected readonly IContextLogger _logger;
+        protected readonly IContextTracer _tracer;
 
-        protected ContextAwareBase(IContextLogger logger)
+
+        protected ContextAwareBase(IContextLogger logger, IContextTracer tracer)
         {
             _logger = logger;
+            _tracer = tracer;
         }
 
         protected void SetContextHeader(IDictionary<string, object> dict, T ctx)

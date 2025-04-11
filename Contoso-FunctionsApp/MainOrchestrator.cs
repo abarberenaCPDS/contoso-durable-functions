@@ -10,7 +10,7 @@ namespace Contoso.FunctionsApp
 {
     public class MainOrchestrator : ContextAwareBase<MyAppContext>
     {
-        public MainOrchestrator(IContextLogger logger) : base(logger) { }
+        public MainOrchestrator(IContextLogger logger,IContextTracer tracer) : base(logger, tracer) { }
 
         [FunctionName("MainOrchestrator")]
         public async Task Run([OrchestrationTrigger] IDurableOrchestrationContext context)
@@ -24,11 +24,11 @@ namespace Contoso.FunctionsApp
             ContextHolder<DistributedTransactionContext>.Current = input.DistributedTransactionContext;
 
             // using spans from OpenTelemetry
-            using var span = ActivityTracing.StartSpan("MainOrchestrator");
-            TransactionEnricher.MarkStep("MainOrchestrator");
-
+            // using var span = ActivityTracing.StartSpan("MainOrchestrator");
+            // TransactionEnricher.MarkStep("MainOrchestrator");
+            
+            using var span = _tracer.StartSpan("MainOrchestrator");
             this._logger.LogInfo("Running MainOrchestrator");
-
 
             // Propagate both headers into the activity call
             // this is left for obviousness, there is no need to manually re-wrap it in a dictionary

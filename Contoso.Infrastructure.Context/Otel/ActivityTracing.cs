@@ -5,7 +5,7 @@ namespace Contoso.Infrastructure.Context
 {
     public static class ActivityTracing
     {
-        private static readonly ActivitySource Source = new("Contoso.DurableApp");
+        private static readonly ActivitySource Source = new("ContosoTracer");
 
         public static Activity StartSpan(string name)
         {

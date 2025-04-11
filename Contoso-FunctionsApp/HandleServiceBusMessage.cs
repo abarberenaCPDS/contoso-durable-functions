@@ -12,10 +12,12 @@ namespace Contoso.FunctionsApp
     public class HandleServiceBusMessage
     {
         private readonly IContextLogger _logger;
+        private readonly IContextTracer _tracer;
 
-        public HandleServiceBusMessage(IContextLogger logger)
+        public HandleServiceBusMessage(IContextLogger logger, IContextTracer tracer)
         {
             _logger = logger;
+            _tracer = tracer;
         }
 
         [FunctionName("HandleServiceBusMessage")]
@@ -28,23 +30,26 @@ namespace Contoso.FunctionsApp
             // Extract out-of-band headers
             var ctx = new MyAppContext
             {
-                ApplicationId = message.ApplicationProperties.TryGetValue("x-app-id", out var appId) ? appId?.ToString() : null,
-                UserCode = message.ApplicationProperties.TryGetValue("x-user-code", out var userCode) ? userCode?.ToString() : null,
-                OrchestrationId = message.ApplicationProperties.TryGetValue("x-orch-id", out var orchId) ? orchId?.ToString() : null
+                ApplicationId = message.ApplicationProperties.TryGetValue("x-app-applicationid", out var appId) ? appId?.ToString() : null,
+                UserCode = message.ApplicationProperties.TryGetValue("x-app-usercode", out var userCode) ? userCode?.ToString() : null,
+                OrchestrationId = message.ApplicationProperties.TryGetValue("x-app-orchestrationid", out var orchId) ? orchId?.ToString() : null
             };
 
             var tx = new DistributedTransactionContext
             {
-                TransactionId = message.ApplicationProperties.TryGetValue("x-tx-id", out var txId) ? txId?.ToString() : null,
-                CurrentStep = message.ApplicationProperties.TryGetValue("x-tx-step", out var txStep) ? txStep?.ToString() : null,
-                Status = "Received"
+                TransactionId = message.ApplicationProperties.TryGetValue("x-tx-transactionid", out var txId) ? txId?.ToString() : null,
+                CurrentStep = message.ApplicationProperties.TryGetValue("x-tx-currentstep", out var txStep) ? txStep?.ToString() : null,
+                Status = $"HandleServiceBusMessage - {message.MessageId} Received"
             };
 
             ContextHolder<MyAppContext>.Current = ctx;
             ContextHolder<DistributedTransactionContext>.Current = tx;
 
-            using var span = ActivityTracing.StartSpan("HandleServiceBusMessage");
-            TransactionEnricher.MarkStep("HandleServiceBusMessage");
+            // using var span = ActivityTracing.StartSpan("HandleServiceBusMessage");
+            // TransactionEnricher.MarkStep("HandleServiceBusMessage");
+
+            using var span = _tracer.StartSpan("HandleServiceBusMessage");
+            this._logger.LogInfo("Running HandleServiceBusMessage");
 
             // Deserialize message body
             var payload = JsonSerializer.Deserialize<MySbPayload>(message.Body);

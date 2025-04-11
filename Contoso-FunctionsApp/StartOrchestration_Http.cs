@@ -20,10 +20,12 @@ namespace Contoso.FunctionsApp
     public class StartOrchestration_Http
     {
         private readonly IContextLogger _logger;
+        private readonly IContextTracer _tracer;
 
-        public StartOrchestration_Http(IContextLogger logger)
+        public StartOrchestration_Http(IContextLogger logger, IContextTracer tracer)
         {
             _logger = logger;
+            this._tracer = tracer;
         }
 
         [FunctionName("StartOrchestration_Http")]
@@ -55,7 +57,9 @@ namespace Contoso.FunctionsApp
             ContextHolder<MyAppContext>.Current = ctx;
             ContextHolder<DistributedTransactionContext>.Current = tx;
 
+            using var span = _tracer.StartSpan("StartOrchestration_Http");
             _logger.LogInfo("Starting orchestration from HTTP");
+
 
             var input = new OrchestrationInput
             {
@@ -65,11 +69,12 @@ namespace Contoso.FunctionsApp
 
             var instanceId = await starter.StartNewAsync("MainOrchestrator", input);
 
-            string responseMessage = $"Orchestration started: {instanceId}";
+            // string responseMessage = $"Orchestration started: {instanceId}";
+            string responseMessage = $"Orchestration started: {ContextHolder<MyAppContext>.Current.OrchestrationId}";
 
             // notice here and in the implementation of LogInfo, how the `context` is retrieved for logging
             _logger.LogInfo(responseMessage);
-            _logger.LogInfo(responseMessage, ctx);
+            // _logger.LogInfo(responseMessage, ctx);
 
             return new OkObjectResult(responseMessage);
 

@@ -1,10 +1,10 @@
-using Contoso.Utilities.Logging;
-using Microsoft.Azure.Functions.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Configuration;
 using System;
 using System.Diagnostics;
 using Contoso.Infrastructure.Messaging;
+using Contoso.Utilities.Logging;
+using Microsoft.Azure.Functions.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
 [assembly: FunctionsStartup(typeof(Contoso.FunctionsApp.Startup))]
 
@@ -27,6 +27,16 @@ public class Startup : FunctionsStartup
             .Bind(configuration.GetSection("Logging"))
             .ValidateDataAnnotations();
 
+        // Register OpenTelemetry for Datadog
+        builder.Services
+            .AddLoggingWithTracing(configuration);
+
+
+        // // Setup OpenTelemetry Activity
+        // SetupOpenTelemetry();
+
+        
+
         builder.Services
             .AddOptions<SbOptions>()
             // .Bind(configuration.GetSection("ServiceBus"));
@@ -40,13 +50,11 @@ public class Startup : FunctionsStartup
         // Add...
         builder.Services.AddHttpClient();
         builder.Services.AddSingleton<IContextLogger, ContextLogger>();
+        builder.Services.AddSingleton<IContextTracer, ContextTracer>();
         builder.Services.AddSingleton<IServiceBusEnvelopeSender, ServiceBusEnvelopeSender>();
 
-        // Setup OpenTelemetry Activity
-        SetupOpenTelemetry();
 
-        // Register OpenTelemetry for Datadog
-        Contoso.Utilities.Logging.OpenTelemetryConfigurator.Configure();
+
     }
 
     private void SetupOpenTelemetry()

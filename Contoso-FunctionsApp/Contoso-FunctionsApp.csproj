@@ -23,6 +23,12 @@
 		<PackageReference Include="Microsoft.Azure.WebJobs.Extensions.OpenApi" Version="1.5.1" />
 		<PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
 		<PackageReference Include="System.Memory.Data" Version="8.0.1" />
+		<PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.9.0" />
+		<PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.9.0" />
+		<PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.9.0" />
+		<PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.9.0" />
+		<PackageReference Include="Azure.Monitor.OpenTelemetry.Exporter" Version="1.3.0" />
+		<PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.23.0" />
 	</ItemGroup>
 	<ItemGroup>
 		<None Update="host.json">
@@ -40,7 +46,6 @@
 		<Using Include="System.Threading.ExecutionContext" Alias="ExecutionContext" />
 	</ItemGroup>
 	<ItemGroup>
-		<ProjectReference Include="../Contoso.Infrastructure.Messaging/Contoso.Infrastructure.Messaging.csproj" />
 		<ProjectReference Include="..\Contoso.Infrastructure.Context\Contoso.Infrastructure.Context.csproj">
 			<GlobalPropertiesToRemove></GlobalPropertiesToRemove>
 		</ProjectReference>
@@ -49,6 +54,9 @@
 		</ProjectReference>
 		<ProjectReference Include="..\Contoso.Utilities.Logging\Contoso.Utilities.Logging.csproj">
 			<GlobalPropertiesToRemove></GlobalPropertiesToRemove>
+		</ProjectReference>
+		<ProjectReference Include="..\Contoso.Infrastructure.Messaging\Contoso.Infrastructure.Messaging.csproj">
+		  <GlobalPropertiesToRemove></GlobalPropertiesToRemove>
 		</ProjectReference>
 	</ItemGroup>
 </Project>
