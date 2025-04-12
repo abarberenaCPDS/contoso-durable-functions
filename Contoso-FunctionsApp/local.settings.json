@@ -10,14 +10,15 @@
     "ServiceBusQueueName": "queue.1"
   },
   "Logging": {
-    "UseAppInsights": true,
-    "UseDatadog": true,
-    "UseConsoleColors": true,
+    "EnableConsoleLogging": false,
+    "EnableAppInsights": false,
+    "EnableDatadog": false,
+    "AppInsightsConnectionString": "<InstrumentationKey>",
     "TelemetryExporter": "DataDog",
     "EnableConsoleExporter": false,
     "DataDog": {
-      "Endpoint": "https://otel.us5.datadoghq.com",
-      "ApiKey": "<API-KEY>"
+      "Endpoint": "<DataDogEndpoint>",
+      "ApiKey": "<ApiKey>"
     }
   }
 }

@@ -31,12 +31,6 @@ public class Startup : FunctionsStartup
         builder.Services
             .AddLoggingWithTracing(configuration);
 
-
-        // // Setup OpenTelemetry Activity
-        // SetupOpenTelemetry();
-
-        
-
         builder.Services
             .AddOptions<SbOptions>()
             // .Bind(configuration.GetSection("ServiceBus"));
@@ -53,30 +47,5 @@ public class Startup : FunctionsStartup
         builder.Services.AddSingleton<IContextTracer, ContextTracer>();
         builder.Services.AddSingleton<IServiceBusEnvelopeSender, ServiceBusEnvelopeSender>();
 
-
-
-    }
-
-    private void SetupOpenTelemetry()
-    {
-        // Use W3C trace format for Azure compatibility
-        Activity.DefaultIdFormat = ActivityIdFormat.W3C;
-        Activity.ForceDefaultIdFormat = true;
-
-        ActivitySource activitySource = new("Contoso.FunctionsApp");
-
-        ActivityListener listener = new()
-        {
-            ShouldListenTo = source => source.Name == "Contoso.FunctionsApp",
-            Sample = (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllDataAndRecorded,
-            ActivityStarted = activity => { },
-            ActivityStopped = activity =>
-            {
-                // Optional: flush to console or Application Insights
-                Console.WriteLine($"[Trace] {activity.DisplayName} | TraceId: {activity.TraceId} | SpanId: {activity.SpanId}");
-            }
-        };
-
-        ActivitySource.AddActivityListener(listener);
     }
 }
