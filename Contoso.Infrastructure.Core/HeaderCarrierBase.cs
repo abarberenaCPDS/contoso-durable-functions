@@ -1,18 +1,24 @@
 ﻿using System.Collections.Generic;
-using Contoso.Infrastructure.Context;
 
 namespace Contoso.Infrastructure.Core
 {
     public abstract class HeaderCarrierBase<T> where T : class
     {
-        protected virtual void AddHeader(IDictionary<string, object> dict, T header)
+        protected readonly IHeaderCarrierStrategy _headerCarrier;
+
+        protected HeaderCarrierBase(IHeaderCarrierStrategy headerCarrier)
         {
-            Header<T>.Set(dict, header);
+            _headerCarrier = headerCarrier;
         }
 
-        protected virtual T GetHeader(IDictionary<string, object> dict)
+        protected virtual void AddHeader(IDictionary<string, object>? dict, T header)
         {
-            return Header<T>.Get(dict);
+            _headerCarrier.Set(dict, header);
+        }
+
+        protected virtual T? GetHeader(IDictionary<string, object>? dict)
+        {
+            return _headerCarrier.Get<T>(dict);
         }
     }
 }

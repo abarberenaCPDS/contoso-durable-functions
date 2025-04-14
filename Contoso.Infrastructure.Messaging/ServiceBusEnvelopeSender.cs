@@ -1,10 +1,8 @@
-﻿using System;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
 using Azure.Messaging.ServiceBus;
-using Contoso.Infrastructure.Messaging;
+using Contoso.Infrastructure.Context;
 using Microsoft.Extensions.Options;
 
 namespace Contoso.Infrastructure.Messaging
@@ -21,56 +19,51 @@ namespace Contoso.Infrastructure.Messaging
             _client = new ServiceBusClient(_settings.ConnectionString);
         }
 
-        public async Task SendAsync<TPayload, TAppContext, TTxContext>(
-            TPayload payload,
-            TAppContext appContext,
-            TTxContext txContext,
-            string target)
+         public async Task SendAsync<T>(EnvelopeContext<T> envelope, string target)
         {
             var targetName = string.IsNullOrWhiteSpace(target)
                 ? _settings.QueueName
                 : target;
 
-
-            // TODO: Design Note
-            //// Ensure the queue exists (idempotent)
-            ///   - Should this framework be in charge of creating the Queue if NOT exists?
-            ///   - Consider having enough privileges, you may not be allowed to manage queues
-            ///   - Consider Catching ServiceBus Exceptions
-            /// Disabled for now because we're using the SB emulator 
-            // await ServiceBusQueueManager.VerifyQueueAsync(_settings.ConnectionString, targetName);
-
-            // Serialize payload
-            var messageBody = JsonSerializer.Serialize(payload);
+            var messageBody = JsonSerializer.Serialize(envelope.Payload);
             var message = new ServiceBusMessage(Encoding.UTF8.GetBytes(messageBody))
             {
                 MessageId = Guid.NewGuid().ToString(),
-                //Subject = messageLabel
             };
 
-            // Attach context headers
-            AddContextHeaders(message, appContext, "x-app");
-            AddContextHeaders(message, txContext, "x-tx");
+            foreach (var kvp in envelope.Headers)
+            {
+                message.ApplicationProperties[kvp.Key] = kvp.Value;
+            }
 
-            // Get or create sender
             var sender = _senders.GetOrAdd(targetName, _client.CreateSender);
             await sender.SendMessageAsync(message);
         }
 
-        private void AddContextHeaders<TContext>(ServiceBusMessage message, TContext context, string prefix)
-        {
-            if (context == null) return;
-
-            var props = typeof(TContext).GetProperties();
-            foreach (var prop in props)
-            {
-                var key = $"{prefix}-{prop.Name.ToLower()}";
-                var value = prop.GetValue(context);
-                if (value != null)
-                {
-                    message.ApplicationProperties[key] = value;
-                }
-            }
-        }
+        //private void AddContextHeaders(ServiceBusMessage message, object? context, string prefix)
+        //{
+        //    if (context is ITelemetryContext telemetryCtx)
+        //    {
+        //        foreach (var tag in telemetryCtx.GetTelemetryTags())
+        //        {
+        //            var key = tag.Key.StartsWith("x-") ? tag.Key : $"{prefix}-{tag.Key.ToLower()}";
+        //            message.ApplicationProperties[key] = tag.Value;
+        //        }
+        //    }
+        //    else if (context != null)
+        //    {
+        //        // Fallback: use reflection
+        //        var props = context.GetType().GetProperties();
+        //        foreach (var prop in props)
+        //        {
+        //            var key = $"{prefix}-{prop.Name.ToLower()}";
+        //            var value = prop.GetValue(context);
+        //            if (value != null)
+        //            {
+        //                message.ApplicationProperties[key] = value;
+        //            }
+        //        }
+        //    }
+        //}
     }
 }

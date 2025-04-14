@@ -4,9 +4,9 @@ namespace Contoso.FunctionsApp.Tests.Integration
 {
     public static class SamplePayload
     {
-        public static OrchestrationInput CreateTestInput()
+        public static OrchestrationInputContext CreateTestInput()
         {
-            return new OrchestrationInput
+            return new OrchestrationInputContext
             {
                 MyAppContext = new MyAppContext
                 {

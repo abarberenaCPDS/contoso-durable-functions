@@ -29,7 +29,7 @@
 1. **HTTP trigger** reads incoming headers and builds `MyAppContext` + `DistributedTransactionContext`.
 2. These are passed as a DTO (`OrchestrationInput`) to the orchestration.
 3. The orchestrator and activities **set context** using `ContextHolder<T>.Current`.
-4. Functions call `ContextLogger.LogInfo(...)`, which logs the message and the current context.
+4. Functions call `ContextLogger.LogInformation(...)`, which logs the message and the current context.
 5. Optional spans are created using `ActivityTracing.StartSpan(...)` and exported to Datadog.
 
 #### Flow:
@@ -49,7 +49,7 @@
 ## 🔍 Developer Tips
 
 - ✅ Use `ContextHolder<T>.Current` to **access context anywhere**
-- ✅ Use `ContextLogger.LogInfo(...)` to **log with context**
+- ✅ Use `ContextLogger.LogInformation(...)` to **log with context**
 - ✅ Use `OrchestrationInput` DTO to pass both `MyAppContext` and `DistributedTransactionContext`
 - ❌ Avoid `Header<T>` unless you're passing raw `Dictionary<string, object>` between orchestrator and activity
 

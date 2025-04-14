@@ -1,63 +1,63 @@
 using System;
-using System.Threading.Tasks;
-using Contoso.Infrastructure.Context;
-using Contoso.Utilities.Logging;
-using Azure.Messaging.ServiceBus;
-using Microsoft.Azure.WebJobs;
+using System.Collections.Generic;
 using System.Text.Json;
+using System.Threading.Tasks;
+using Azure.Messaging.ServiceBus;
+using Contoso.Infrastructure.Context;
+using Contoso.Infrastructure.Core;
 using Contoso.Infrastructure.Messaging;
+using Contoso.Utilities.Context;
+using Contoso.Utilities.Logging;
+using ContosoFunctionsApp.Extensions;
+using Microsoft.Azure.WebJobs;
 
 namespace Contoso.FunctionsApp
 {
-    public class HandleServiceBusMessage
+    public class HandleServiceBusMessage : FunctionExtension
     {
         private readonly IContextLogger _logger;
-        private readonly IContextTracer _tracer;
+        //private readonly IContextTracer _tracer;
 
-        public HandleServiceBusMessage(IContextLogger logger, IContextTracer tracer)
-        {
-            _logger = logger;
-            _tracer = tracer;
-        }
+        public HandleServiceBusMessage(
+            IContextLogger logger,
+            ITelemetryPipeline telemetry,
+            IHeaderCarrierStrategy headerStrategy)
+            : base(logger, telemetry, headerStrategy)
+        { }
 
         [FunctionName("HandleServiceBusMessage")]
-
         public async Task Run(
-            // [ServiceBusTrigger("%ServiceBusQueueName%", Connection = "ServiceBus:ConnectionString")]
             [ServiceBusTrigger(SbConstants.QueueNames.ProcessedItemsBinding, Connection = SbConstants.ConnectionStrings.Primary)]
-         ServiceBusReceivedMessage message)
+            ServiceBusReceivedMessage message)
         {
-            // Extract out-of-band headers
-            var ctx = new MyAppContext
+            // Extract out-of-band headers (telemetry context) from SB application properties
+            ITelemetryContext? restoredContext = GetContextHeader(message.ApplicationProperties as IDictionary<string, object>);
+
+            if (restoredContext is not null)
             {
-                ApplicationId = message.ApplicationProperties.TryGetValue("x-app-applicationid", out var appId) ? appId?.ToString() : null,
-                UserCode = message.ApplicationProperties.TryGetValue("x-app-usercode", out var userCode) ? userCode?.ToString() : null,
-                OrchestrationId = message.ApplicationProperties.TryGetValue("x-app-orchestrationid", out var orchId) ? orchId?.ToString() : null
-            };
+                ContextHolder<ITelemetryContext>.Current = restoredContext;
+            }
 
-            var tx = new DistributedTransactionContext
+            using var span = TraceScope("HandleServiceBusMessage");
+
+            _logger.LogInformation("Running HandleServiceBusMessage");
+            TraceMetric("contoso.sb.HandleServiceBusMessage.received", 1);
+
+            try
             {
-                TransactionId = message.ApplicationProperties.TryGetValue("x-tx-transactionid", out var txId) ? txId?.ToString() : null,
-                CurrentStep = message.ApplicationProperties.TryGetValue("x-tx-currentstep", out var txStep) ? txStep?.ToString() : null,
-                Status = $"HandleServiceBusMessage - {message.MessageId} Received"
-            };
+                var payload = JsonSerializer.Deserialize<MySbPayload>(message.Body);
 
-            ContextHolder<MyAppContext>.Current = ctx;
-            ContextHolder<DistributedTransactionContext>.Current = tx;
+                _logger.LogInformation(string.Format("Handled SB message: {0} (ID: {1})",
+                    payload?.SomeAction,
+                    payload?.SomeMessageId));
 
-            // using var span = ActivityTracing.StartSpan("HandleServiceBusMessage");
-            // TransactionEnricher.MarkStep("HandleServiceBusMessage");
-
-            using var span = _tracer.StartSpan("HandleServiceBusMessage");
-            this._logger.LogInfo("Running HandleServiceBusMessage");
-
-            // Deserialize message body
-            var payload = JsonSerializer.Deserialize<MySbPayload>(message.Body);
-
-            _logger.LogInfo($"Handled Service Bus message: {payload?.SomeAction} (ID: {payload?.SomeMessageId})");
-
-            await Task.CompletedTask;
-
+                await Task.CompletedTask;
+            }
+            catch (Exception ex)
+            {
+                TraceError(ex);
+                throw;
+            }
         }
     }
 }

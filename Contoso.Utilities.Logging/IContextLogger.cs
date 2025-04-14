@@ -1,12 +1,13 @@
 ﻿using Contoso.Infrastructure.Context;
-using System;
+using Contoso.Utilities.Context;
+using Microsoft.Extensions.Logging;
 
 namespace Contoso.Utilities.Logging
 {
     public interface IContextLogger
     {
-        void LogInfo(string message, MyAppContext context = null);
-        void LogWarning(string message, MyAppContext context = null);
-        void LogError(Exception ex, string message = null, MyAppContext context = null);
+        void LogInformation(string message, ITelemetryContext context = null);
+        void LogWarning(string message, ITelemetryContext context = null);
+        void LogError(Exception ex, string message = null, ITelemetryContext context = null);
     }
 }

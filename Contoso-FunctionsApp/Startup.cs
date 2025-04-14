@@ -1,5 +1,5 @@
 using System;
-using System.Diagnostics;
+using Contoso.Infrastructure.Core;
 using Contoso.Infrastructure.Messaging;
 using Contoso.Utilities.Logging;
 using Microsoft.Azure.Functions.Extensions.DependencyInjection;
@@ -44,7 +44,10 @@ public class Startup : FunctionsStartup
         // Add...
         builder.Services.AddHttpClient();
         builder.Services.AddSingleton<IContextLogger, ContextLogger>();
-        builder.Services.AddSingleton<IContextTracer, ContextTracer>();
+        // builder.Services.AddSingleton<IContextTracer, ContextTracer>();
+        builder.Services.AddSingleton<IHeaderCarrierStrategy, HeaderCarrierStrategy>();
+        builder.Services.AddSingleton<ITelemetryPipeline, TelemetryPipeline>();
+        builder.Services.AddSingleton<ITelemetryEnricher, TelemetryEnricher>();
         builder.Services.AddSingleton<IServiceBusEnvelopeSender, ServiceBusEnvelopeSender>();
 
     }

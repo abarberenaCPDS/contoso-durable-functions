@@ -53,12 +53,9 @@ namespace Contoso.Infrastructure.Context
         public static T Get(IDictionary<string, object> dict)
         {
             Debug.Assert(dict != null);
-
-            var h = dict.TryGetValue(Key, out var val) ? val as T : null;
-
-            return h;
-
-            // return dict.TryGetValue(Key, out var val) ? val as T : null;
+            
+            var header = dict.TryGetValue(Key, out var val) ? val as T : null;
+            return header;
         }
     }
 }

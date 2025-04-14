@@ -1,11 +1,11 @@
+using System;
 using System.Collections.Generic;
+using Contoso.Utilities.Context;
 
 namespace Contoso.Infrastructure.Context
 {
     // Optional Helper
     // If you want to streamline context setup, this helper can simplify boilerplate in all function triggers.
-
-
     
     public static class ContextSetupHelper
     {
@@ -25,8 +25,12 @@ namespace Contoso.Infrastructure.Context
                 Status = "Started"
             };
 
+            // TODO: refactor this later
             ContextHolder<MyAppContext>.Current = ctx;
             ContextHolder<DistributedTransactionContext>.Current = tx;
+
+            ContextHolder<OrchestrationInputContext>.Current.MyAppContext = ctx;
+            ContextHolder<OrchestrationInputContext>.Current.DistributedTransactionContext = tx;
         }
     }
 }

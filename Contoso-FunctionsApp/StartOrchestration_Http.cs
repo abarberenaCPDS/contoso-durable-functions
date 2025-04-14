@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Net;
 using System.Threading.Tasks;
 using Contoso.Infrastructure.Context;
+using Contoso.Infrastructure.Core;
 using Contoso.Utilities.Logging;
+using ContosoFunctionsApp.Extensions;
+using Microsoft.ApplicationInsights.Channel;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
@@ -13,20 +15,18 @@ using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Attributes;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
-using Newtonsoft.Json;
 
 namespace Contoso.FunctionsApp
 {
-    public class StartOrchestration_Http
+    public class StartOrchestration_Http : FunctionExtension
     {
-        private readonly IContextLogger _logger;
-        private readonly IContextTracer _tracer;
 
-        public StartOrchestration_Http(IContextLogger logger, IContextTracer tracer)
-        {
-            _logger = logger;
-            this._tracer = tracer;
-        }
+        public StartOrchestration_Http(
+            IContextLogger logger,
+            ITelemetryPipeline telemetryPipeline,
+            IHeaderCarrierStrategy headerStrategy)
+            : base(logger, telemetryPipeline, headerStrategy)
+        { }
 
         [FunctionName("StartOrchestration_Http")]
         [OpenApiOperation(operationId: "Run", tags: new[] { "name" })]
@@ -54,26 +54,21 @@ namespace Contoso.FunctionsApp
                 Status = "Started"
             };
 
-            ContextHolder<MyAppContext>.Current = ctx;
-            ContextHolder<DistributedTransactionContext>.Current = tx;
 
-            using var span = _tracer.StartSpan("StartOrchestration_Http");
-            _logger.LogInfo("Starting orchestration from HTTP");
+            var orchestrationContext = OrchestrationInputContext.CreateWithBinding(ctx, tx);
 
+            var headerCarrier = new Dictionary<string, object>();
+            SetContextHeader(headerCarrier, orchestrationContext);
 
-            var input = new OrchestrationInput
-            {
-                MyAppContext = ctx,
-                DistributedTransactionContext = tx
-            };
+            using var span = TraceScope("StartOrchestration_Http.Run"); // context is now optional
+            _logger.LogInformation("Starting orchestration from HTTP");
 
-            var instanceId = await starter.StartNewAsync("MainOrchestrator", input);
+            var instanceId = await starter.StartNewAsync("MainOrchestrator", orchestrationContext);
 
-            // string responseMessage = $"Orchestration started: {instanceId}";
-            string responseMessage = $"Orchestration started: {ContextHolder<MyAppContext>.Current.OrchestrationId}";
+            string responseMessage = $"Orchestration started: {orchestrationContext.MyAppContext.OrchestrationId}";
 
             // notice here and in the implementation of LogInfo, how the `context` is retrieved for logging
-            _logger.LogInfo(responseMessage);
+            _logger.LogInformation(responseMessage);
             // _logger.LogInfo(responseMessage, ctx);
 
             return new OkObjectResult(responseMessage);
@@ -81,4 +76,3 @@ namespace Contoso.FunctionsApp
         }
     }
 }
-

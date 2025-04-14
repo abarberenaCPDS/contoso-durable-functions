@@ -1,14 +1,11 @@
-﻿using System.Threading.Tasks;
-using Contoso.Infrastructure.Context;
+﻿using Contoso.Infrastructure.Context;
 
 namespace Contoso.Infrastructure.Messaging
 {
     public interface IServiceBusEnvelopeSender
     {
-        Task SendAsync<TPayload, TAppContext, TDistribuitedTxContext>(
-            TPayload payload,
-            TAppContext applicationContext,
-            TDistribuitedTxContext distributedTransactionContext,
-            string queueName = null);
+        Task SendAsync<TPayload>(
+            EnvelopeContext<TPayload> envelope,
+            string target);
     }
 }

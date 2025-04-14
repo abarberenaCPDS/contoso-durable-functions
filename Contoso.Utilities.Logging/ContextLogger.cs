@@ -1,4 +1,5 @@
 ﻿using Contoso.Infrastructure.Context;
+using Contoso.Utilities.Context;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
@@ -16,9 +17,9 @@ namespace Contoso.Utilities.Logging
             _options = options.Value;
         }
 
-        public void LogInfo(string message, MyAppContext context = null)
+        public void LogInformation(string message, ITelemetryContext context = null)
         {
-            context ??= ContextHolder<MyAppContext>.Current;
+            context ??= ContextHolder<ITelemetryContext>.Current;
 
             if (_options.UseConsoleColors)
             {
@@ -30,9 +31,9 @@ namespace Contoso.Utilities.Logging
             _logger.LogInformation("MyContextLogger ==> {Message} | {@Context}", message, context);
         }
 
-        public void LogWarning(string message, MyAppContext context = null)
+        public void LogWarning(string message, ITelemetryContext context = null)
         {
-            context ??= ContextHolder<MyAppContext>.Current;
+            context ??= ContextHolder<ITelemetryContext>.Current;
 
             if (_options.UseConsoleColors)
             {
@@ -44,9 +45,9 @@ namespace Contoso.Utilities.Logging
             _logger.LogWarning("MyContextLogger ==> {Message} | {@Context}", message, context);
         }
 
-        public void LogError(Exception ex, string message = null, MyAppContext context = null)
+        public void LogError(Exception ex, string message = null, ITelemetryContext context = null)
         {
-            context ??= ContextHolder<MyAppContext>.Current;
+            context ??= ContextHolder<ITelemetryContext>.Current;
 
             if (_options.UseConsoleColors)
             {
