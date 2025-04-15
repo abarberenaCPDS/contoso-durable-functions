@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using Contoso.Infrastructure.Context;
 using Contoso.Infrastructure.Core;
 using Contoso.Utilities.Context;
 using Contoso.Utilities.Logging;
@@ -18,6 +20,12 @@ namespace ContosoFunctionsApp.Extensions
             _logger = logger;
         }
 
+        protected Task RunWithHandling(Func<Task> action, string operationName)
+            => FunctionWrapper.HandleAsync(action, operationName, _telemetry, _logger, ContextHolder<ITelemetryContext>.Current);
+
+        protected Task<TResult> RunWithHandling<TResult>(Func<Task<TResult>> action, string operationName)
+            => FunctionWrapper.HandleAsync(action, operationName, _telemetry, _logger, ContextHolder<ITelemetryContext>.Current);
+            
         protected IDisposable TraceScope(string operation, ITelemetryContext? context = null)
             => _telemetry.BeginSpan(operation, context, out _);
 
