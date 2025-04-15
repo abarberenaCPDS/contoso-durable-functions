@@ -54,7 +54,6 @@ namespace Contoso.FunctionsApp
                 Status = "Started"
             };
 
-
             var orchestrationContext = OrchestrationInputContext.CreateWithBinding(ctx, tx);
 
             var headerCarrier = new Dictionary<string, object>();
@@ -64,6 +63,7 @@ namespace Contoso.FunctionsApp
             _logger.LogInformation("Starting orchestration from HTTP");
 
             var instanceId = await starter.StartNewAsync("MainOrchestrator", orchestrationContext);
+            TraceMetric("contoso.StartOrchestration_Http.Run", 1);
 
             string responseMessage = $"Orchestration started: {orchestrationContext.MyAppContext.OrchestrationId}";
 

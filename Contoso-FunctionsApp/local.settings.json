@@ -10,10 +10,11 @@
     "ServiceBusQueueName": "queue.1"
   },
   "Logging": {
+    "UseConsoleColors": true,
     "EnableConsoleLogging": false,
-    "EnableAppInsights": false,
+    "EnableAppInsights": true,
     "EnableDatadog": false,
-    "AppInsightsConnectionString": "<InstrumentationKey>",
+    "AppInsightsConnectionString": "InstrumentationKey=3f1b34b7-a809-41ae-b511-b76d5551619e;IngestionEndpoint=https://eastus-2.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/;ApplicationId=08a06aca-7c11-4d87-b6ff-55addfddb92a",
     "TelemetryExporter": "DataDog",
     "EnableConsoleExporter": false,
     "DataDog": {

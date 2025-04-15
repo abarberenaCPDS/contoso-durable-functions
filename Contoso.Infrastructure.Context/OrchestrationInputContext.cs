@@ -6,8 +6,8 @@ namespace Contoso.Infrastructure.Context
 {
     public class OrchestrationInputContext : ITelemetryContext
     {
-        public MyAppContext MyAppContext { get; set; } = default!;
-        public DistributedTransactionContext DistributedTransactionContext { get; set; } = default!;
+        public MyAppContext MyAppContext { get; set; } = new();
+        public DistributedTransactionContext DistributedTransactionContext { get; set; } = new();
 
         // Static Factory to OrchestrationInputContext
         public static OrchestrationInputContext CreateWithBinding(

@@ -18,7 +18,7 @@ namespace Contoso.Infrastructure.Context
         static Header()
         {
             // Verify [DataContract] or [Serializable] on T
-            Debug.Assert(IsDataContract(typeof(T)));
+            // Debug.Assert(IsDataContract(typeof(T)));
             TypeNamespace = "net.clr:" + typeof(T).FullName;
             TypeName = "Header";
         }

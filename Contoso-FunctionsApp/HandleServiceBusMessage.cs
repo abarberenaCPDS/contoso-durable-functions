@@ -15,14 +15,11 @@ namespace Contoso.FunctionsApp
 {
     public class HandleServiceBusMessage : FunctionExtension
     {
-        private readonly IContextLogger _logger;
-        //private readonly IContextTracer _tracer;
-
         public HandleServiceBusMessage(
             IContextLogger logger,
-            ITelemetryPipeline telemetry,
+            ITelemetryPipeline telemetryPipeline,
             IHeaderCarrierStrategy headerStrategy)
-            : base(logger, telemetry, headerStrategy)
+            : base(logger, telemetryPipeline, headerStrategy)
         { }
 
         [FunctionName("HandleServiceBusMessage")]
@@ -31,13 +28,20 @@ namespace Contoso.FunctionsApp
             ServiceBusReceivedMessage message)
         {
             // Extract out-of-band headers (telemetry context) from SB application properties
-            ITelemetryContext? restoredContext = GetContextHeader(message.ApplicationProperties as IDictionary<string, object>);
+            ITelemetryContext? telemetryContext = TelemetryContextBinder.CreateFromHeaders(message.ApplicationProperties as IDictionary<string, object>);
 
-            if (restoredContext is not null)
+            // TODO: for demo only
+            if (telemetryContext is null)
             {
-                ContextHolder<ITelemetryContext>.Current = restoredContext;
+                ArgumentNullException telemetryContextNullException = new ArgumentNullException("TelemetryContext is empty.");
+                TraceError(telemetryContextNullException);
+                this._logger.LogError(telemetryContextNullException);
+                throw telemetryContextNullException;
             }
-
+            
+            (telemetryContext as OrchestrationInputContext).DistributedTransactionContext.CurrentStep="HandleServiceBusMessage";
+            ContextHolder<ITelemetryContext>.Current = telemetryContext;
+            
             using var span = TraceScope("HandleServiceBusMessage");
 
             _logger.LogInformation("Running HandleServiceBusMessage");
@@ -47,15 +51,14 @@ namespace Contoso.FunctionsApp
             {
                 var payload = JsonSerializer.Deserialize<MySbPayload>(message.Body);
 
-                _logger.LogInformation(string.Format("Handled SB message: {0} (ID: {1})",
-                    payload?.SomeAction,
-                    payload?.SomeMessageId));
+                _logger.LogInformation($"Handled SB message --> SomeAction: {payload?.SomeAction} - SomeMessageId: {payload?.SomeMessageId})");
 
                 await Task.CompletedTask;
             }
             catch (Exception ex)
             {
                 TraceError(ex);
+                _logger.LogError(ex);
                 throw;
             }
         }
