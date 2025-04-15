@@ -27,40 +27,36 @@ namespace Contoso.FunctionsApp
             [ServiceBusTrigger(SbConstants.QueueNames.ProcessedItemsBinding, Connection = SbConstants.ConnectionStrings.Primary)]
             ServiceBusReceivedMessage message)
         {
-            // Extract out-of-band headers (telemetry context) from SB application properties
-            ITelemetryContext? telemetryContext = TelemetryContextBinder.CreateFromHeaders(message.ApplicationProperties as IDictionary<string, object>);
-
-            // TODO: for demo only
-            if (telemetryContext is null)
+            await RunWithHandling(async () =>
             {
-                ArgumentNullException telemetryContextNullException = new ArgumentNullException("TelemetryContext is empty.");
-                TraceError(telemetryContextNullException);
-                this._logger.LogError(telemetryContextNullException);
-                throw telemetryContextNullException;
-            }
-            
-            (telemetryContext as OrchestrationInputContext).DistributedTransactionContext.CurrentStep="HandleServiceBusMessage";
-            ContextHolder<ITelemetryContext>.Current = telemetryContext;
-            
-            using var span = TraceScope("HandleServiceBusMessage");
 
-            _logger.LogInformation("Running HandleServiceBusMessage");
-            TraceMetric("contoso.sb.HandleServiceBusMessage.received", 1);
+                // Extract out-of-band headers (telemetry context) from SB application properties
+                ITelemetryContext? telemetryContext = TelemetryContextBinder.CreateFromHeaders(message.ApplicationProperties as IDictionary<string, object>);
 
-            try
-            {
+                // TODO: for demo only
+                if (telemetryContext is null)
+                {
+                    ArgumentNullException telemetryContextNullException = new ArgumentNullException("TelemetryContext is empty.");
+                    TraceError(telemetryContextNullException);
+                    this._logger.LogError(telemetryContextNullException);
+                    throw telemetryContextNullException;
+                }
+
+                (telemetryContext as OrchestrationInputContext).DistributedTransactionContext.CurrentStep = "HandleServiceBusMessage";
+                ContextHolder<ITelemetryContext>.Current = telemetryContext;
+                _logger.LogInformation("Running HandleServiceBusMessage");
+
+                using var span = TraceScope("HandleServiceBusMessage");
+
+                _logger.LogInformation("Running HandleServiceBusMessage");
+                TraceMetric("contoso.sb.HandleServiceBusMessage.received", 1);
+
                 var payload = JsonSerializer.Deserialize<MySbPayload>(message.Body);
 
                 _logger.LogInformation($"Handled SB message --> SomeAction: {payload?.SomeAction} - SomeMessageId: {payload?.SomeMessageId})");
 
                 await Task.CompletedTask;
-            }
-            catch (Exception ex)
-            {
-                TraceError(ex);
-                _logger.LogError(ex);
-                throw;
-            }
+            }, "HandleServiceBusMessage.Run");
         }
     }
 }

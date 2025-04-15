@@ -4,6 +4,7 @@ using System.Net;
 using System.Threading.Tasks;
 using Contoso.Infrastructure.Context;
 using Contoso.Infrastructure.Core;
+using Contoso.Utilities.Context;
 using Contoso.Utilities.Logging;
 using ContosoFunctionsApp.Extensions;
 using Microsoft.ApplicationInsights.Channel;
@@ -38,6 +39,7 @@ namespace Contoso.FunctionsApp
             [DurableClient] IDurableOrchestrationClient starter
         )
         {
+
             var headers = req.Headers;
 
             var ctx = new MyAppContext
@@ -56,22 +58,31 @@ namespace Contoso.FunctionsApp
 
             var orchestrationContext = OrchestrationInputContext.CreateWithBinding(ctx, tx);
 
-            var headerCarrier = new Dictionary<string, object>();
-            SetContextHeader(headerCarrier, orchestrationContext);
+            return await FunctionWrapper.HandleAsync(
+                async () =>
+                {
+                    var headerCarrier = new Dictionary<string, object>();
+                    SetContextHeader(headerCarrier, orchestrationContext);
 
-            using var span = TraceScope("StartOrchestration_Http.Run"); // context is now optional
-            _logger.LogInformation("Starting orchestration from HTTP");
+                    using var span = TraceScope("StartOrchestration_Http.Run"); // context is now optional
+                    _logger.LogInformation("Starting orchestration from HTTP");
 
-            var instanceId = await starter.StartNewAsync("MainOrchestrator", orchestrationContext);
-            TraceMetric("contoso.StartOrchestration_Http.Run", 1);
+                    var instanceId = await starter.StartNewAsync("MainOrchestrator", orchestrationContext);
+                    TraceMetric("contoso.StartOrchestration_Http.Run", 1);
 
-            string responseMessage = $"Orchestration started: {orchestrationContext.MyAppContext.OrchestrationId}";
+                    string responseMessage = $"Orchestration started: {orchestrationContext.MyAppContext.OrchestrationId}";
 
-            // notice here and in the implementation of LogInfo, how the `context` is retrieved for logging
-            _logger.LogInformation(responseMessage);
-            // _logger.LogInfo(responseMessage, ctx);
+                    // notice here and in the implementation of LogInfo, how the `context` is retrieved for logging
+                    _logger.LogInformation(responseMessage);
+                    // _logger.LogInfo(responseMessage, ctx);
 
-            return new OkObjectResult(responseMessage);
+                    return new OkObjectResult(responseMessage);
+                },
+                "StartOrchestration_Http.Run",
+                _telemetry,
+                _logger,
+                orchestrationContext
+            );
 
         }
     }

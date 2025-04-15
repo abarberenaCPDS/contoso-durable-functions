@@ -32,24 +32,24 @@ namespace Contoso.FunctionsApp
         [FunctionName("ProcessActivity")]
         public async Task Run([ActivityTrigger] OrchestrationInputContext input)
         {
-            // update context...
-            input.DistributedTransactionContext.CurrentStep = "ProcessActivity";
-            ContextHolder<ITelemetryContext>.Current = input;
-
-            using var span = TraceScope("ProcessActivity");
-            _logger.LogInformation("Running ProcessActivity — preparing Service Bus message");
-
-            TraceMetric("contoso.ProcessActivity.invoked", 1);
-
-            var messagePayload = new MySbPayload
+            await RunWithHandling(async () =>
             {
-                SomeMessageId = Guid.NewGuid().ToString(),
-                SomeAction = "ProcessedData",
-                ATimestamp = DateTime.UtcNow
-            };
+                // update context...
+                input.DistributedTransactionContext.CurrentStep = "ProcessActivity";
+                ContextHolder<ITelemetryContext>.Current = input;
 
-            try
-            {
+                using var span = TraceScope("ProcessActivity");
+                _logger.LogInformation("Running ProcessActivity — preparing Service Bus message");
+
+                TraceMetric("contoso.ProcessActivity.invoked", 1);
+
+                var messagePayload = new MySbPayload
+                {
+                    SomeMessageId = Guid.NewGuid().ToString(),
+                    SomeAction = "ProcessedData",
+                    ATimestamp = DateTime.UtcNow
+                };
+
                 // Simulate failure (demo only)
                 if (DateTime.Now.Millisecond % 2 == 1)
                     throw new InvalidOperationException("This is an intentionally thrown exception for demonstration.");
@@ -61,13 +61,8 @@ namespace Contoso.FunctionsApp
                 await _serviceBusEnvelopeSender.SendAsync(envelope, _sbOptions.QueueName);
 
                 _logger.LogInformation(string.Format("Message sent to Service Bus queue: {0}", _sbOptions.QueueName));
-            }
-            catch (Exception ex)
-            {
-                TraceError(ex);
-                _logger.LogError(ex, "Error occurred in ProcessActivity");
-                throw;
-            }
+
+            }, "ProcessActivity.Run");
         }
     }
 }

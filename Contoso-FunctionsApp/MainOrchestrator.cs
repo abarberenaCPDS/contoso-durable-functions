@@ -20,20 +20,18 @@ namespace Contoso.FunctionsApp
         [FunctionName("MainOrchestrator")]
         public async Task Run([OrchestrationTrigger] IDurableOrchestrationContext context)
         {
-            var input = context.GetInput<OrchestrationInputContext>();
+            await RunWithHandling(async () =>
+            {
 
-            input.DistributedTransactionContext.CurrentStep = "MainOrchestrator";
-            ContextHolder<ITelemetryContext>.Current = input;
-            
-            // using spans from OpenTelemetry
-            using var span = TraceScope("MainOrchestrator.Run");
+                var input = context.GetInput<OrchestrationInputContext>();
+                input.DistributedTransactionContext.CurrentStep = "MainOrchestrator";
+                ContextHolder<ITelemetryContext>.Current = input;
 
-            _logger.LogInformation("Running orchestrator");
+                _logger.LogInformation("Running orchestrator");
+                await context.CallActivityAsync("ProcessActivity", input);
+                _logger.LogInformation("Completed MainOrchestrator");
 
-            // Example of downstream activity call
-            await context.CallActivityAsync("ProcessActivity", input);
-
-            _logger.LogInformation("Completed MainOrchestrator");
+            }, "MainOrchestrator.Run");
         }
     }
 }

@@ -20,12 +20,14 @@ namespace ContosoFunctionsApp.Extensions
             _logger = logger;
         }
 
+        // Centralized handling helpers
         protected Task RunWithHandling(Func<Task> action, string operationName)
             => FunctionWrapper.HandleAsync(action, operationName, _telemetry, _logger, ContextHolder<ITelemetryContext>.Current);
 
         protected Task<TResult> RunWithHandling<TResult>(Func<Task<TResult>> action, string operationName)
             => FunctionWrapper.HandleAsync(action, operationName, _telemetry, _logger, ContextHolder<ITelemetryContext>.Current);
-            
+
+        // Centralized instrumentation helpers
         protected IDisposable TraceScope(string operation, ITelemetryContext? context = null)
             => _telemetry.BeginSpan(operation, context, out _);
 
