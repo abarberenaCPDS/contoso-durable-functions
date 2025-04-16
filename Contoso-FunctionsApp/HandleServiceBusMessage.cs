@@ -27,21 +27,23 @@ namespace Contoso.FunctionsApp
             [ServiceBusTrigger(SbConstants.QueueNames.ProcessedItemsBinding, Connection = SbConstants.ConnectionStrings.Primary)]
             ServiceBusReceivedMessage message)
         {
+            // Extract out-of-band headers (telemetry context) from SB application properties
+
+            // ContextHolder must be set before calling FunctionWrapper.HandleAsync(...)
+            // this ensures that telemetry, logging, and exceptions are enriched
+            ITelemetryContext? telemetryContext = TelemetryContextBinder.CreateFromHeaders(message.ApplicationProperties as IDictionary<string, object>);
+
+            // TODO: for demo only
+            if (telemetryContext is null)
+            {
+                ArgumentNullException telemetryContextNullException = new ArgumentNullException("TelemetryContext is empty.");
+                TraceError(telemetryContextNullException);
+                this._logger.LogError(telemetryContextNullException);
+                throw telemetryContextNullException;
+            }
+
             await RunWithHandling(async () =>
             {
-
-                // Extract out-of-band headers (telemetry context) from SB application properties
-                ITelemetryContext? telemetryContext = TelemetryContextBinder.CreateFromHeaders(message.ApplicationProperties as IDictionary<string, object>);
-
-                // TODO: for demo only
-                if (telemetryContext is null)
-                {
-                    ArgumentNullException telemetryContextNullException = new ArgumentNullException("TelemetryContext is empty.");
-                    TraceError(telemetryContextNullException);
-                    this._logger.LogError(telemetryContextNullException);
-                    throw telemetryContextNullException;
-                }
-
                 (telemetryContext as OrchestrationInputContext).DistributedTransactionContext.CurrentStep = "HandleServiceBusMessage";
                 ContextHolder<ITelemetryContext>.Current = telemetryContext;
                 _logger.LogInformation("Running HandleServiceBusMessage");

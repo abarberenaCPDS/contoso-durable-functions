@@ -8,6 +8,7 @@ using Contoso.Utilities.Logging;
 using ContosoFunctionsApp.Extensions;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Extensions.Options;
 
 namespace Contoso.FunctionsApp
@@ -29,15 +30,17 @@ namespace Contoso.FunctionsApp
             _sbOptions = sbOptions.Value;
         }
 
+        //[FunctionExceptionFilter(typeof(ExceptionHandlingFilter))]
         [FunctionName("ProcessActivity")]
         public async Task Run([ActivityTrigger] OrchestrationInputContext input)
         {
+            // ContextHolder must be set before calling FunctionWrapper.HandleAsync(...)
+            // this ensures that telemetry, logging, and exceptions are enriched
+            input.DistributedTransactionContext.CurrentStep = "ProcessActivity";
+            ContextHolder<ITelemetryContext>.Current = input;
+
             await RunWithHandling(async () =>
             {
-                // update context...
-                input.DistributedTransactionContext.CurrentStep = "ProcessActivity";
-                ContextHolder<ITelemetryContext>.Current = input;
-
                 using var span = TraceScope("ProcessActivity");
                 _logger.LogInformation("Running ProcessActivity — preparing Service Bus message");
 

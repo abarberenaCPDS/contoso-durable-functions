@@ -2,7 +2,9 @@ using System;
 using Contoso.Infrastructure.Core;
 using Contoso.Infrastructure.Messaging;
 using Contoso.Utilities.Logging;
+using ContosoFunctionsApp.Extensions;
 using Microsoft.Azure.Functions.Extensions.DependencyInjection;
+using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -44,10 +46,16 @@ public class Startup : FunctionsStartup
         // Add...
         builder.Services.AddHttpClient();
         builder.Services.AddSingleton<IContextLogger, ContextLogger>();
-        // builder.Services.AddSingleton<IContextTracer, ContextTracer>();
         builder.Services.AddSingleton<IHeaderCarrierStrategy, HeaderCarrierStrategy>();
         builder.Services.AddSingleton<ITelemetryPipeline, TelemetryPipeline>();
         builder.Services.AddSingleton<ITelemetryEnricher, TelemetryEnricher>();
+
+        // TODO: remove this...
+        // IFunctionInvocationFilter is marked as [Obsolete]
+        // https://github.com/azure/azure-webjobs-sdk/wiki/function-filters
+        // https://github.com/Azure/azure-webjobs-sdk/blob/dev/src/Microsoft.Azure.WebJobs.Host/Filters/IFunctionInvocationFilter.cs
+        builder.Services.AddSingleton<IFunctionInvocationFilter, ExceptionHandlingFilter>();
+
         builder.Services.AddSingleton<IServiceBusEnvelopeSender, ServiceBusEnvelopeSender>();
 
     }

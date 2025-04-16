@@ -21,7 +21,6 @@ namespace Contoso.FunctionsApp
 {
     public class StartOrchestration_Http : FunctionExtension
     {
-
         public StartOrchestration_Http(
             IContextLogger logger,
             ITelemetryPipeline telemetryPipeline,
@@ -39,7 +38,6 @@ namespace Contoso.FunctionsApp
             [DurableClient] IDurableOrchestrationClient starter
         )
         {
-
             var headers = req.Headers;
 
             var ctx = new MyAppContext
@@ -55,6 +53,9 @@ namespace Contoso.FunctionsApp
                 CurrentStep = "HttpTrigger",
                 Status = "Started"
             };
+
+            // ContextHolder must be set before calling FunctionWrapper.HandleAsync(...)
+            // this ensures that telemetry, logging, and exceptions are enriched
 
             var orchestrationContext = OrchestrationInputContext.CreateWithBinding(ctx, tx);
 
@@ -74,7 +75,6 @@ namespace Contoso.FunctionsApp
 
                     // notice here and in the implementation of LogInfo, how the `context` is retrieved for logging
                     _logger.LogInformation(responseMessage);
-                    // _logger.LogInfo(responseMessage, ctx);
 
                     return new OkObjectResult(responseMessage);
                 },
@@ -83,7 +83,6 @@ namespace Contoso.FunctionsApp
                 _logger,
                 orchestrationContext
             );
-
         }
     }
 }

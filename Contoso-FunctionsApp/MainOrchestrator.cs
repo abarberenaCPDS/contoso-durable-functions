@@ -20,11 +20,13 @@ namespace Contoso.FunctionsApp
         [FunctionName("MainOrchestrator")]
         public async Task Run([OrchestrationTrigger] IDurableOrchestrationContext context)
         {
+            // ContextHolder must be set before calling FunctionWrapper.HandleAsync(...)
+            // this ensures that telemetry, logging, and exceptions are enriched
+            var input = context.GetInput<OrchestrationInputContext>();
+            input.DistributedTransactionContext.CurrentStep = "MainOrchestrator";
+
             await RunWithHandling(async () =>
             {
-
-                var input = context.GetInput<OrchestrationInputContext>();
-                input.DistributedTransactionContext.CurrentStep = "MainOrchestrator";
                 ContextHolder<ITelemetryContext>.Current = input;
 
                 _logger.LogInformation("Running orchestrator");

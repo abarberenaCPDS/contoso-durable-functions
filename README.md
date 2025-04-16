@@ -1,88 +1,103 @@
-# 🧭 Contoso Durable Functions – Context + Logging Overview
+# Contoso Durable Functions
 
-## 🔧 Solution
+A production-grade Azure Functions project built with .NET 8 (in-process), leveraging:
+- Azure Durable Functions
+- Structured telemetry with OpenTelemetry
+- Centralized logging and exception handling
+- Context-aware messaging and orchestration
+- Application Insights and Datadog integration
 
-- **Azure Durable Functions** (in-process model)
-- Custom **context propagation** system using:
-  - `MyAppContext`
-  - `DistributedTransactionContext`
-- Centralized, structured **logging system** via `ContextLogger`
-- Built-in **OpenTelemetry tracing** to Datadog (via OTLP)
-
----
-
-## 📦 Core Concepts
-
-| Concept | Purpose |
-|--------|---------|
-| `MyAppContext` | Holds request metadata: `ApplicationId`, `UserCode`, `OrchestrationId` |
-| `DistributedTransactionContext` | Tracks a logical transaction or workflow (step, status, rollback) |
-| `ContextHolder<T>` | Stores the current context using `AsyncLocal<T>` so it flows across layers |
-| `Header<T>` | Helper to set/get typed context values inside a dictionary (used between orchestration steps) |
-| `ContextLogger` | Logs with structured context, supports App Insights, Datadog, and local console colors |
-| `ContextAwareBase<T>` | Optional base class to simplify context setup per function or service class |
-
----
-
-## 🚀 How It Works (Developer Flow)
-
-1. **HTTP trigger** reads incoming headers and builds `MyAppContext` + `DistributedTransactionContext`.
-2. These are passed as a DTO (`OrchestrationInput`) to the orchestration.
-3. The orchestrator and activities **set context** using `ContextHolder<T>.Current`.
-4. Functions call `ContextLogger.LogInformation(...)`, which logs the message and the current context.
-5. Optional spans are created using `ActivityTracing.StartSpan(...)` and exported to Datadog.
-
-#### Flow:
-```
-[HTTP Trigger]
-  └─> StartOrchestration_Http (creates OrchestrationInput with headers)
-       └─> MainOrchestrator
-            └─> ProcessActivity
-                 └─> Sends SB message with payload + propagated context headers
-                      └─> HandleServiceBusMessage
-                           └─> Reads payload, extracts context, logs + traces it
+## Project Structure
 
 ```
----
+Contoso-FunctionsApp/
+│   └── Durable and triggered functions
+Contoso.Infrastructure.*
+│   └── Messaging, context, headers, configuration
+Contoso.Utilities.*
+│   └── Telemetry pipeline, logging, error handling
+```
 
+## Features
 
-## 🔍 Developer Tips
+- Durable orchestrators and activity functions
+- Service Bus trigger and outbound messaging
+- Ambient context propagation with `ContextHolder<T>`
+- Centralized telemetry via `ITelemetryPipeline`
+- Consistent logging via `IContextLogger`
+- `FunctionWrapper` utility for error handling and spans
+- OpenAPI annotations for HTTP functions
+- Local development with secrets and fallback console logging
 
-- ✅ Use `ContextHolder<T>.Current` to **access context anywhere**
-- ✅ Use `ContextLogger.LogInformation(...)` to **log with context**
-- ✅ Use `OrchestrationInput` DTO to pass both `MyAppContext` and `DistributedTransactionContext`
-- ❌ Avoid `Header<T>` unless you're passing raw `Dictionary<string, object>` between orchestrator and activity
+## Core Design Patterns
 
----
+### FunctionWrapper
 
-## 🧪 Local Debugging Tips
+All functions are wrapped using `FunctionWrapper` or the `RunWithHandling` helper to provide:
 
-- Set `UseConsoleColors = true` in `local.settings.json` to highlight logs
-- Ensure `AZURE_FUNCTIONS_ENVIRONMENT=Development` for local behavior
-- Use `DD_API_KEY` to push spans to Datadog via OTLP
+- Centralized span creation
+- Exception logging and recording
+- Reduced boilerplate and improved consistency
 
----
+```csharp
+await RunWithHandling(async () =>
+{
+    // business logic
+}, "ProcessActivity.Run");
+```
 
+### Context Propagation
 
-## Usage
+Uses `ContextHolder<ITelemetryContext>.Current` to retain and flow metadata like:
 
-Set context via headers on HTTP or Service Bus:
-  ```sh
-  x-app-id:MyApp123 x-user-code:ABC123
-  ```
+- Application ID
+- User code
+- Transaction ID
+- Orchestration step
 
-Logs will contain:
-  ```json
-  "message" : "Starting orchestration", "context" : { "ApplicationId": "MyApp", "UserCode": "ABC123", "OrchestrationId": "auto-generated" }
-  ```
+These values are automatically serialized in outbound headers and enriched in telemetry.
 
-  ## Testing
+## Local Development Setup
 
-- See [Contoso.FunctionsApp.Tests.Integration/README.md](./Contoso.FunctionsApp.Tests.Integration/README.md)
+### Prerequisites
+
+- [.NET 8 SDK](https://dotnet.microsoft.com/en-us/download)
+- [Azure Functions Core Tools v4](https://learn.microsoft.com/en-us/azure/azure-functions/functions-run-local)
+- Azure Storage Emulator or Azurite
+- Azure Service Bus Emulator
+- Application Insights instrumentation key (optional)
+
+### Run Locally
+
+```bash
+func start
+```
+
+## Telemetry
+
+### Traced with:
+
+- [OpenTelemetry SDK for .NET](https://opentelemetry.io/docs/instrumentation/net/)
+- `ActivitySource`, `Meter`, and structured tags
+- Logs, spans, metrics, and custom tags
+
+### Export Targets:
+
+- Azure Application Insights
+- Datadog (via `TelemetryOptions`)
+- Console (for local/dev)
+
+## Deployment
+
+This project is designed to deploy via:
+
+- GitHub Actions
+- Azure DevOps Pipelines
+- Manual zip deployment with `func azure functionapp publish`
 
 
 ## Resources
 
-- https://github.com/Azure/azure-functions-core-tools/issues/3766
-- https://www.jpatrickfulton.dev/blog/2023-07-08-fix-csharp-macos-debugging/
-- https://github.com/Azure/azure-service-bus-emulator-installer
+- [Durable Functions Patterns](https://learn.microsoft.com/en-us/azure/azure-functions/durable/durable-functions-overview)
+- [OpenTelemetry .NET Docs](https://opentelemetry.io/docs/instrumentation/net/)
+- [Azure Functions Best Practices](https://learn.microsoft.com/en-us/azure/azure-functions/functions-best-practices)
